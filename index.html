@@ -1,44 +1,246 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Stratavor MVP</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stratavor | Intelligent Automation</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-</head>
-<body style="font-family: sans-serif; padding: 2rem;">
+    <style>
+        /* STRATAVOR DESIGN SYSTEM (Apple-esque) */
+        :root {
+            --bg-color: #f5f5f7; /* Apple's light grey background */
+            --card-bg: #ffffff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --accent-color: #0071e3; /* Apple Blue */
+            --accent-hover: #0077ed;
+            --danger-color: #ff3b30;
+            --success-color: #34c759;
+        }
 
-    <h1>Stratavor MVP</h1>
-    <p>Loading data from Supabase...</p>
-    
-    <ul id="data-list"></ul>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); /* Soft, premium shadow */
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        p.subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+
+        /* Form Styling */
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px; /* Smooth rounded corners */
+            background-color: rgba(255,255,255,0.8);
+            transition: all 0.2s ease;
+            box-sizing: border-box; /* Fix padding issues */
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); /* Blue glow on focus */
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 17px;
+            font-weight: 500;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.1s ease, background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+            transform: scale(1.01); /* Subtle grow effect */
+        }
+
+        button:active {
+            transform: scale(0.98); /* Click press effect */
+        }
+
+        /* Status & List */
+        #status-msg {
+            margin-top: 15px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+
+        .data-container {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            background: #f9f9f9;
+            margin-bottom: 8px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        li span.company { font-weight: 600; }
+        li span.email { color: var(--text-secondary); font-size: 13px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Stratavor</h1>
+        <p class="subtitle">Join the future of automated enterprise.<br>Reserve your spot on the waitlist.</p>
+
+        <div class="input-group">
+            <label>Company Name</label>
+            <input type="text" id="companyInput" placeholder="e.g. Acme Corp">
+        </div>
+
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" id="emailInput" placeholder="name@company.com">
+        </div>
+
+        <button onclick="submitLead()">Join Waitlist</button>
+        <p id="status-msg"></p>
+
+        <div class="data-container">
+            <label style="text-align: center; margin-bottom: 10px;">Live Waitlist</label>
+            <ul id="data-list">
+                </ul>
+        </div>
+    </div>
 
     <script>
-        // 1. Initialize the connection
+        // --- CONFIGURATION ---
+        // PASTE YOUR KEYS HERE
         const supabaseUrl = 'https://tlqfsgfytonqwwmvhlfe.supabase.co'
-        const supabaseKey = 'sb_publishable_B1z7R_LWIdvnjbybputVHg_OgtbRv4M'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRscWZzZ2Z5dG9ucXd3bXZobGZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4Nzk1OTUsImV4cCI6MjA4NDQ1NTU5NX0.T2wynx8v0PLHjSr5IMoWWN-evGdPfbD9P60GHy6869U'
+        const n8nUrl = 'https://stratavor.app.n8n.cloud/webhook/test-lead' 
         
-        // FIX: We named this 'db' instead of 'supabase' to avoid the name collision
         const db = window.supabase.createClient(supabaseUrl, supabaseKey)
 
-        // 2. The Function to fetch data
         async function fetchData() {
-            // FIX: We use 'db' here now
+            const list = document.getElementById('data-list')
+            list.innerHTML = '<li style="justify-content:center; color:#888;">Loading...</li>'
+            
             const { data, error } = await db
                 .from('leads')
                 .select('*')
+                .order('created_at', { ascending: false })
+                .limit(5) // Only show top 5 for cleaner look
 
-            // 3. Handle the result
-            if (error) {
-                console.log("Error:", error)
-                document.querySelector('p').innerText = "Error: " + error.message
-            } else {
-                const list = document.getElementById('data-list')
-                document.querySelector('p').innerText = "Data loaded successfully: " + data.length + " rows found."
-                
+            if (!error) {
+                list.innerHTML = ""
                 data.forEach(row => {
                     const item = document.createElement('li')
-                    item.textContent = `${row.company_name} - ${row.email}`
+                    item.innerHTML = `<span class="company">${row.company_name}</span> <span class="email">${row.email}</span>`
                     list.appendChild(item)
                 })
+            }
+        }
+
+        async function submitLead() {
+            const company = document.getElementById('companyInput').value
+            const email = document.getElementById('emailInput').value
+            const statusMsg = document.getElementById('status-msg')
+            const btn = document.querySelector('button')
+
+            if (!company || !email) {
+                statusMsg.innerText = "Please complete all fields."
+                statusMsg.style.color = "var(--danger-color)"
+                return
+            }
+
+            // UX: Disable button while loading
+            btn.innerText = "Processing..."
+            btn.disabled = true
+            statusMsg.innerText = ""
+
+            const finalUrl = `${n8nUrl}?company=${encodeURIComponent(company)}&email=${encodeURIComponent(email)}`
+
+            try {
+                await fetch(finalUrl)
+                statusMsg.innerText = "You have been added."
+                statusMsg.style.color = "var(--success-color)"
+                
+                document.getElementById('companyInput').value = ""
+                document.getElementById('emailInput').value = ""
+                
+                // Refresh list after 1.5s
+                setTimeout(() => {
+                    fetchData()
+                    btn.innerText = "Join Waitlist"
+                    btn.disabled = false
+                }, 1500)
+
+            } catch (err) {
+                console.error(err)
+                statusMsg.innerText = "Connection error."
+                statusMsg.style.color = "var(--danger-color)"
+                btn.innerText = "Try Again"
+                btn.disabled = false
             }
         }
 
