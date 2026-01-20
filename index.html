@@ -1,2 +1,48 @@
-<h1>Stratavor MVP</h1>
-<p>AI Analysis: Trending Up 📈</p>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stratavor MVP</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body style="font-family: sans-serif; padding: 2rem;">
+
+    <h1>Stratavor MVP</h1>
+    <p>Loading data from Supabase...</p>
+    
+    <ul id="data-list"></ul>
+
+    <script>
+        // 1. Initialize the connection
+        const supabaseUrl = 'https://tlqfsgfytonqwwmvhlfe.supabase.co'
+        const supabaseKey = 'sb_publishable_B1z7R_LWIdvnjbybputVHg_OgtbRv4M'
+        
+        // FIX: We named this 'db' instead of 'supabase' to avoid the name collision
+        const db = window.supabase.createClient(supabaseUrl, supabaseKey)
+
+        // 2. The Function to fetch data
+        async function fetchData() {
+            // FIX: We use 'db' here now
+            const { data, error } = await db
+                .from('leads')
+                .select('*')
+
+            // 3. Handle the result
+            if (error) {
+                console.log("Error:", error)
+                document.querySelector('p').innerText = "Error: " + error.message
+            } else {
+                const list = document.getElementById('data-list')
+                document.querySelector('p').innerText = "Data loaded successfully: " + data.length + " rows found."
+                
+                data.forEach(row => {
+                    const item = document.createElement('li')
+                    item.textContent = `${row.company_name} - ${row.email}`
+                    list.appendChild(item)
+                })
+            }
+        }
+
+        fetchData()
+    </script>
+</body>
+</html>
